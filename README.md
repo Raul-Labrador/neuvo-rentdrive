@@ -1,20 +1,21 @@
-# 🚗 RentDrive — Gestor de Alquiler de Vehículos
+# 🚗 RentDrive — Gestor de Alquiler de Vehículos con Tracking GPS
 
-![WordPress](https://img.shields.io/badge/WordPress-Theme-21759B?style=flat-square&logo=wordpress&logoColor=white)
-![Laravel](https://img.shields.io/badge/Laravel-API-FF2D20?style=flat-square&logo=laravel&logoColor=white)
+![WordPress](https://img.shields.io/badge/WordPress-Tema%20custom-21759B?style=flat-square&logo=wordpress&logoColor=white)
+![Laravel](https://img.shields.io/badge/Laravel-API%20REST-FF2D20?style=flat-square&logo=laravel&logoColor=white)
 ![PHP](https://img.shields.io/badge/PHP-8.x-777BB4?style=flat-square&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![Status](https://img.shields.io/badge/Status-TFG-gold?style=flat-square)
+![GPS](https://img.shields.io/badge/GPS-Tracking%20en%20vivo-00c8ff?style=flat-square)
+![Status](https://img.shields.io/badge/Status-TFG%20Grupal-gold?style=flat-square)
 
-> Proyecto de Fin de Grado — Tema WordPress personalizado con **Custom Post Type** propio para la gestión de flotas de vehículos, conectado a una **API REST en Laravel** como backend.
+> **Trabajo de Fin de Grado (grupal)** — Tema WordPress completamente artesanal con Custom Post Type propio, conectado a una API REST en Laravel, con **tracking GPS en tiempo real** de la flota de vehículos.
 
 ---
 
-## 📋 Descripción
+## 📋 Descripcióngeolocation
 
-RentDrive es una solución fullstack de dos capas: **WordPress actúa como frontend** presentando el catálogo de vehículos y el sistema de reservas al usuario final, mientras que **Laravel expone una API REST** que gestiona toda la lógica de negocio — disponibilidad, reservas y administración de flota.
+RentDrive es una solución fullstack de dos capas: **WordPress actúa como frontend** con un tema desarrollado desde cero —sin plantilla base— presentando el catálogo de vehículos y el sistema de reservas, mientras que **Laravel expone una API REST** que gestiona toda la lógica de negocio.
 
-La arquitectura desacopla completamente la capa de presentación de la lógica de negocio, permitiendo que WordPress consuma los datos del backend mediante peticiones asíncronas.
+El elemento diferencial del proyecto es el **sistema de tracking GPS en tiempo real**: cada vehículo envía continuamente su posición (latitud, longitud e ID) en formato JSON a un endpoint de Laravel, que procesa y sirve los datos para visualizarlos sobre un mapa renderizado en JavaScript desde una vista Blade.
 
 ---
 
@@ -22,9 +23,10 @@ La arquitectura desacopla completamente la capa de presentación de la lógica d
 
 | Capa | Tecnologías |
 |------|------------|
-| Frontend | WordPress · Tema custom · Custom Post Type (CPT) · PHP · HTML5 · CSS3 · JS |
+| Frontend | WordPress · Tema custom (sin plantilla base) · CPT · PHP · HTML5 · CSS3 · JS |
 | Backend | Laravel · API REST · Eloquent ORM |
 | Base de datos | MySQL |
+| Tracking GPS | JSON payload · Endpoint Laravel · Mapa JS en Blade |
 | Comunicación | Fetch API (WordPress → Laravel REST API) |
 
 ---
@@ -32,25 +34,43 @@ La arquitectura desacopla completamente la capa de presentación de la lógica d
 ## ✨ Funcionalidades
 
 ### 👤 Usuario público
-- Consulta del **catálogo de vehículos** (gestionado mediante CPT)
+- Consulta del **catálogo de vehículos** gestionado mediante Custom Post Type
 - **Reserva de vehículos** con selección de fechas y comprobación de disponibilidad en tiempo real
 
 ### 🛠️ Panel de Administración
-- **Gestión de flota** — alta, edición y eliminación de vehículos desde el panel WordPress
-- **Panel de reservas** — listado y gestión de todas las reservas activas
+- **Gestión de flota** — alta, edición y eliminación de vehículos
+- **Panel de reservas** — listado y gestión de reservas activas
 - **Gestión de clientes** — administración de usuarios registrados
+- **Tracking GPS en vivo** — visualización en mapa de la posición en tiempo real de cada vehículo de la flota
+
+---
+
+## 📡 Tracking GPS en tiempo real
+
+El sistema recibe la posición de cada vehículo de forma continua:
+
+1. Una app simuladora envía un **payload JSON** con `latitud`, `longitud` e `id_vehiculo` a un endpoint de Laravel
+2. Laravel procesa los datos y los almacena / sirve al frontend
+3. Una vista **Blade** renderiza el mapa con **JavaScript** y pinta la posición actualizada de cada vehículo
+4. El panel de administración muestra el seguimiento en vivo de toda la flota
 
 ---
 
 ## 🏗️ Arquitectura
 
 ```
-┌─────────────────────────────┐       HTTP / REST       ┌──────────────────────────┐
-│        FRONTEND              │ ─────────────────────▶  │        BACKEND           │
-│   WordPress (Tema custom)    │                         │    Laravel (API REST)    │
-│   Custom Post Type (CPT)     │ ◀─────────────────────  │    Lógica de negocio     │
-│   Vistas · Reservas · Admin  │       JSON Response     │    Disponibilidad        │
-└─────────────────────────────┘                         └──────────────────────────┘
+┌──────────────────────────────┐     HTTP / JSON      ┌──────────────────────────┐
+│         FRONTEND              │ ──────────────────▶  │        BACKEND           │
+│   WordPress (Tema artesanal)  │                      │    Laravel (API REST)    │
+│   Custom Post Type (CPT)      │ ◀──────────────────  │    Lógica de negocio     │
+│   Reservas · Admin · Mapa GPS │    JSON Response     │    GPS · Disponibilidad  │
+└──────────────────────────────┘                      └──────────────────────────┘
+                                                                 ▲
+                                                                 │ JSON
+                                                      ┌──────────────────────┐
+                                                      │   App GPS Simuladora  │
+                                                      │  lat · lng · id_veh  │
+                                                      └──────────────────────┘
 ```
 
 ---
@@ -58,8 +78,7 @@ La arquitectura desacopla completamente la capa de presentación de la lógica d
 ## 🚀 Instalación
 
 ### Requisitos
-- PHP 8.x · Composer · MySQL
-- WordPress 6.x
+- PHP 8.x · Composer · MySQL · WordPress 6.x
 - Servidor local (Laragon, XAMPP...)
 
 ### Backend — Laravel
@@ -82,7 +101,7 @@ php artisan serve
 # 1. Instala WordPress en tu servidor local
 # 2. Copia la carpeta del tema a /wp-content/themes/rentdrive
 # 3. Activa el tema desde Panel → Apariencia → Temas
-# 4. Configura la URL del backend en el archivo de configuración del tema
+# 4. Configura la URL del backend en functions.php:
 #    define('RENTDRIVE_API_URL', 'http://localhost:8000/api');
 ```
 
@@ -92,32 +111,35 @@ php artisan serve
 
 ```
 rentdrive/
-├── backend/                        # Laravel API
+├── backend/                          # Laravel API
 │   ├── app/Http/Controllers/Api/
 │   │   ├── VehiculoController.php
 │   │   ├── ReservaController.php
-│   │   └── ClienteController.php
+│   │   ├── ClienteController.php
+│   │   └── GpsController.php         # Recepción y servicio de datos GPS
 │   ├── database/migrations/
 │   └── routes/api.php
 │
-└── frontend/                       # Tema WordPress
-    ├── functions.php               # Registro del CPT + hooks
-    ├── cpt-vehiculos.php           # Custom Post Type: Vehículos
+└── frontend/                         # Tema WordPress artesanal
+    ├── functions.php                 # Registro del CPT + hooks + config API
+    ├── cpt-vehiculos.php             # Custom Post Type: Vehículos
     ├── templates/
     │   ├── page-catalogo.php
     │   ├── page-reserva.php
-    │   └── page-admin.php
+    │   ├── page-admin.php
+    │   └── page-tracking.php         # Mapa GPS en tiempo real
     └── assets/
         ├── css/
         └── js/
-            └── api.js              # Comunicación con Laravel API
+            ├── api.js                # Comunicación con Laravel API
+            └── tracking.js          # Renderizado del mapa y posiciones GPS
 ```
 
 ---
 
-## 👨‍💻 Contexto
+## 👥 Equipo
 
-**Trabajo de Fin de Grado** del Grado Superior de Desarrollo de Aplicaciones Web (DAW). El proyecto demuestra el dominio de arquitecturas desacopladas, desarrollo de temas WordPress desde cero, implementación de Custom Post Types y diseño de APIs REST con Laravel.
+Proyecto desarrollado en equipo como **Trabajo de Fin de Grado** del Grado Superior de Desarrollo de Aplicaciones Web (DAW). El desarrollo fue compartido entre los miembros del grupo, cubriendo tanto el frontend WordPress como el backend Laravel.
 
 ---
 
