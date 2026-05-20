@@ -1,0 +1,82 @@
+.page-header-detail {
+    padding-bottom: 2rem;
+}
+
+.detail-image-wrapper {
+    background-color: var(--color-gray-100);
+    height: 500px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.detail-main-image {
+    object-fit: contain;
+    max-height: 100%;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+}
+
+.detail-section-title {
+    color: var(--color-primary);
+    letter-spacing: 0.05em;
+    font-size: 1.5rem;
+}
+
+.detail-description-text {
+    font-size: 1.05rem;
+}
+
+.sticky-sidebar {
+    top: 120px;
+    z-index: 10;
+}
+
+.price-action-card {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.price-action-price {
+    font-size: 2.5rem;
+    line-height: 0.8;
+}
+
+.price-action-period {
+    color: var(--color-gray-400);
+}
+
+.price-action-disclaimer {
+    color: var(--color-gray-400);
+}
+
+.btn-book-action {
+    background-color: var(--color-white);
+    color: var(--color-primary) !important;
+    letter-spacing: 0.05em;
+    transition: 0.3s;
+}
+
+.btn-book-action:hover {
+    background-color: var(--color-gray-200);
+    color: var(--color-primary) !important;
+}
+
+.specs-card {
+    background-color: var(--color-gray-100);
+    border: 1px solid var(--color-gray-200);
+}
+
+.specs-title {
+    color: var(--color-primary);
+    letter-spacing: 0.05em;
+}
+
+.spec-list-item {
+    border-color: var(--color-gray-300) !important;
+}
+
+.spec-value {
+    text-align: right;
+}

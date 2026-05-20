@@ -1,0 +1,25 @@
+.custom-fields-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border: 1px solid black;
+	margin-top: 2rem;
+	padding: 1rem;
+}
+
+.cfield {
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+	width: 100%;
+
+	span:first-child {
+		text-transform: uppercase;
+		font-weight: 600;
+	}
+
+	span:last-child {
+		font-size: 1.2rem;
+		margin-top: 0.5rem;
+	}
+}

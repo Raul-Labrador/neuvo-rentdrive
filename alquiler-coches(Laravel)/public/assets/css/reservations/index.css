@@ -1,0 +1,127 @@
+.badge-confirmed {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.badge-completed {
+    background: rgba(46, 204, 113, 0.12);
+    color: #2ecc71;
+}
+
+.badge-cancelled {
+    background: rgba(231, 76, 60, 0.12);
+    color: #e74c3c;
+}
+
+.badge-active {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.flash-msg {
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flash-success {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    color: #2ecc71;
+}
+
+.flash-error {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 0.72rem;
+}
+
+.filter-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--clr-border);
+    background: var(--clr-card);
+    color: var(--clr-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+    border-color: var(--clr-border-h);
+    color: var(--clr-white);
+}
+
+.filter-pill.active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.btn-return {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-return:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #f59e0b;
+}
+
+.returned-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: #2ecc71;
+    font-weight: 500;
+}
+
+.view-link {
+    color: var(--clr-accent);
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.view-link:hover {
+    color: var(--clr-white);
+}
+
+.res-count {
+    font-size: 0.78rem;
+    color: var(--clr-muted);
+    margin-left: 8px;
+}

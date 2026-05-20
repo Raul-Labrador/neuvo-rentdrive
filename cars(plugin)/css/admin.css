@@ -1,0 +1,74 @@
+.flex-metabox {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	gap: 20px;
+	padding: 15px;
+	box-sizing: border-box;
+}
+
+.details {
+	flex: 2;
+	min-width: 400px;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	padding: 15px;
+	border-radius: 4px;
+
+	label {
+		width: 140px;
+		font-weight: 600;
+	}
+
+	input,
+	select {
+		flex: 1;
+	}
+
+	& > div {
+		display: flex;
+		margin-bottom: 10px;
+		align-items: center;
+	}
+}
+
+.services {
+	flex: 1;
+	min-width: 300px;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	padding: 15px;
+	border-radius: 4px;
+}
+
+.details,
+.services {
+	h2 {
+		background: #f0f0f1;
+		margin: -15px -15px 15px -15px;
+		padding: 10px;
+		font-size: 14px;
+		text-align: center;
+		border-bottom: 1px solid #ccd0d4;
+	}
+}
+
+.services-table {
+	width: 100%;
+	border-collapse: collapse;
+
+	input {
+		width: 100%;
+		box-sizing: border-box;
+	}
+}
+
+.remove-button {
+	background-color: red;
+	color: white;
+}
+
+.add-button {
+	background-color: green;
+	color: white;
+}

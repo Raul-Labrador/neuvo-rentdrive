@@ -1,0 +1,565 @@
+/**
+ * Booking Modal JS – Rediseño con calendario interactivo y flujo por pasos.
+ * Steps: 1-Dates | 2-Details | 3-Summary | 4-Confirm
+ */
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        /* ── DOM refs ── */
+        var modal        = document.getElementById('booking-modal');
+        var overlay      = modal ? modal.querySelector('.booking-modal-overlay') : null;
+        var closeBtn     = modal ? modal.querySelector('.bm-close') : null;
+        var carIdField   = document.getElementById('booking-car-id');
+
+        if (!modal) return;
+
+        var pricePerDay  = (bookingData && bookingData.pricePerDay) ? parseFloat(bookingData.pricePerDay) : 0;
+        var isAvailable  = false;
+
+        /* ── State ── */
+        var state = {
+            currentStep : 1,
+            startDate   : null,   // Date object
+            endDate     : null,   // Date object
+            hoverDate   : null,   // Date object (for hover preview)
+            selecting   : 'start', // 'start' | 'end'
+            calYear     : 0,
+            calMonth    : 0,
+        };
+
+        /* ── Step navigation refs ── */
+        var steps       = modal.querySelectorAll('.bm-step');
+        var connectors  = modal.querySelectorAll('.bm-step-connector');
+        var panels      = modal.querySelectorAll('.bm-panel');
+
+        /* Step 1 */
+        var calGrid     = document.getElementById('bm-cal-grid');
+        var calLabel    = document.getElementById('bm-cal-month-label');
+        var calPrev     = document.getElementById('bm-cal-prev');
+        var calNext     = document.getElementById('bm-cal-next');
+        var startDisp   = document.getElementById('bm-start-display');
+        var endDisp     = document.getElementById('bm-end-display');
+        var chipStart   = document.getElementById('bm-chip-start');
+        var chipEnd     = document.getElementById('bm-chip-end');
+        var step1Next   = document.getElementById('bm-step1-next');
+        var availBlock  = document.getElementById('bm-availability');
+        var availChk    = document.getElementById('bm-avail-checking');
+        var availOk     = document.getElementById('bm-avail-ok');
+        var availErr    = document.getElementById('bm-avail-error');
+        var availErrTxt = document.getElementById('bm-avail-error-text');
+
+        /* Step 2 */
+        var step2Back    = document.getElementById('bm-step2-back');
+        var step2Next    = document.getElementById('bm-step2-next');
+        var userNameEl   = document.getElementById('bm-user-name');
+        var userEmailEl  = document.getElementById('bm-user-email');
+        var detailStart  = document.getElementById('bm-detail-start');
+        var detailEnd    = document.getElementById('bm-detail-end');
+        var detailDays   = document.getElementById('bm-detail-days');
+
+        /* Step 3 (Payment) */
+        var step3Back       = document.getElementById('bm-step3-back');
+        var step3Next       = document.getElementById('bm-step3-next');
+        var sumCarName      = document.getElementById('bm-summary-car-name');
+        var sumDatesDays    = document.getElementById('bm-sum-dates-days');
+        var sumTotal        = document.getElementById('bm-sum-total');
+        var payBtnText      = document.getElementById('bm-pay-btn-text');
+
+        /* Step 4 (Confirm) */
+        var confirmIcon     = document.getElementById('bm-confirm-icon');
+        var confirmTitle    = document.getElementById('bm-confirm-title');
+        var confirmText     = document.getElementById('bm-confirm-text');
+        var confirmActions  = document.getElementById('bm-confirm-actions');
+        var btnDone         = document.getElementById('bm-btn-done');
+
+        /* ════════════════════════════════════════
+           MODAL OPEN / CLOSE
+        ════════════════════════════════════════ */
+        document.querySelectorAll('.book-car-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var carId = this.getAttribute('data-car-id');
+                if (carIdField) carIdField.value = carId;
+                openModal();
+            });
+        });
+
+        function openModal() {
+            resetAll();
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+
+            // Pre-fill user data
+            if (bookingData && bookingData.userName)  userNameEl.textContent  = bookingData.userName;
+            if (bookingData && bookingData.userEmail) userEmailEl.textContent = bookingData.userEmail;
+        }
+
+        function closeModal() {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (overlay)  overlay.addEventListener('click', closeModal);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+        });
+
+        /* ════════════════════════════════════════
+           STEP MANAGEMENT
+        ════════════════════════════════════════ */
+        function goToStep(n) {
+            state.currentStep = n;
+            panels.forEach(function (p, i) {
+                p.classList.toggle('active', i + 1 === n);
+            });
+            steps.forEach(function (s, i) {
+                var stepNum = i + 1;
+                s.classList.remove('active', 'completed');
+                if (stepNum === n)      s.classList.add('active');
+                else if (stepNum < n)   s.classList.add('completed');
+            });
+            connectors.forEach(function (c, i) {
+                c.classList.toggle('filled', i + 1 < n);
+            });
+            // Scroll modal to top on step change
+            var content = modal.querySelector('.booking-modal-content');
+            if (content) content.scrollTop = 0;
+        }
+
+        /* Step 1 → 2 */
+        if (step1Next) step1Next.addEventListener('click', function () {
+            if (!isAvailable) return;
+            fillSummary();  // Rellenar datos antes de entrar al step 2 y 3
+            goToStep(2);
+        });
+
+        /* Step 2 → 1 / 3 */
+        if (step2Back) step2Back.addEventListener('click', function () { goToStep(1); });
+        if (step2Next) step2Next.addEventListener('click', function () {
+            // fillSummary() ya se llamó al pasar del 1 al 2, pero no está de más
+            fillSummary();
+            goToStep(3);
+        });
+
+        /* Step 3 → 2 / 4 */
+        if (step3Back) step3Back.addEventListener('click', function () { goToStep(2); });
+        if (step3Next) step3Next.addEventListener('click', function () {
+            goToStep(4);
+            submitBooking();
+        });
+
+        /* Step 4 retry / done */
+        if (btnDone) btnDone.addEventListener('click', function () {
+            closeModal();
+            window.location.reload(); // Recargar para limpiar el formulario y actualizar estado
+        });
+
+        /* ════════════════════════════════════════
+           CALENDAR
+        ════════════════════════════════════════ */
+        var MONTHS = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+
+        function initCalendar() {
+            var now = new Date();
+            state.calYear  = now.getFullYear();
+            state.calMonth = now.getMonth();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            var year        = state.calYear;
+            var month       = state.calMonth;
+            calLabel.textContent = MONTHS[month] + ' ' + year;
+
+            var firstDay    = new Date(year, month, 1).getDay();
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            var today = new Date();
+            today.setHours(0,0,0,0);
+
+            calGrid.innerHTML = '';
+
+            // Empty lead cells
+            for (var e = 0; e < firstDay; e++) {
+                var empty = document.createElement('div');
+                empty.className = 'bm-day bm-day-empty';
+                calGrid.appendChild(empty);
+            }
+
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dayDate = new Date(year, month, d);
+                dayDate.setHours(0,0,0,0);
+
+                var cell = document.createElement('div');
+                cell.className = 'bm-day';
+                cell.textContent = d;
+                cell.setAttribute('data-ts', dayDate.getTime());
+
+                var isPast = dayDate < today;
+
+                if (isPast) {
+                    cell.classList.add('bm-day-past');
+                } else {
+                    if (dayDate.getTime() === today.getTime()) cell.classList.add('bm-day-today');
+                    applyCellRangeClasses(cell, dayDate);
+                    cell.addEventListener('click', makeDayClick(dayDate));
+                    // Hover: solo actualiza clases, NO rehace el DOM
+                    cell.addEventListener('mouseenter', makeDayHover(dayDate));
+                }
+
+                calGrid.appendChild(cell);
+            }
+
+            // Limpiar hover cuando el ratón sale del grid entero
+            calGrid.addEventListener('mouseleave', function () {
+                if (state.hoverDate) {
+                    state.hoverDate = null;
+                    updateRangeClasses();
+                }
+            }, { once: true });
+        }
+
+        /* Actualiza solo las clases de rango en las celdas existentes (sin re-render) */
+        function updateRangeClasses() {
+            var cells = calGrid.querySelectorAll('.bm-day');
+            cells.forEach(function (cell) {
+                if (cell.classList.contains('bm-day-empty') ||
+                    cell.classList.contains('bm-day-past'))  return;
+
+                var ts = parseInt(cell.getAttribute('data-ts'), 10);
+                if (!ts) return;
+
+                var d = new Date(ts);
+                cell.classList.remove('bm-day-start', 'bm-day-end', 'bm-day-in-range');
+                applyCellRangeClasses(cell, d);
+            });
+        }
+
+        function applyCellRangeClasses(cell, dayDate) {
+            var start  = state.startDate;
+            var end    = state.endDate;
+            var hover  = state.hoverDate;
+            var t      = dayDate.getTime();
+
+            var isStart   = start && t === start.getTime();
+            var isEnd     = end   && t === end.getTime();
+
+            // Determine effective range end (either confirmed end or hover preview)
+            var rangeEnd = end;
+            if (!end && start && hover && hover > start) rangeEnd = hover;
+            else if (!end && start && hover && hover < start) {
+                // allow reverse hover (select earlier date as start)
+                rangeEnd = start;
+                start = hover;
+            }
+
+            var inRange = start && rangeEnd && t > start.getTime() && t < rangeEnd.getTime();
+            var isHoverEnd = !end && state.hoverDate && t === state.hoverDate.getTime() && state.startDate;
+
+            if (isStart) cell.classList.add('bm-day-start');
+            if (isEnd || isHoverEnd) cell.classList.add('bm-day-end');
+            if (inRange || isStart || isEnd || isHoverEnd) cell.classList.add('bm-day-in-range');
+        }
+
+        function makeDayClick(date) {
+            return function () {
+                if (state.selecting === 'start' || (state.startDate && state.endDate)) {
+                    // start fresh selection
+                    state.startDate = date;
+                    state.endDate   = null;
+                    state.selecting = 'end';
+                    isAvailable     = false;
+                    step1Next.disabled = true;
+                    hideAvail();
+                } else {
+                    // selecting end
+                    if (date <= state.startDate) {
+                        // clicked before start → restart
+                        state.startDate = date;
+                        state.endDate   = null;
+                        state.selecting = 'end';
+                        isAvailable     = false;
+                        step1Next.disabled = true;
+                        hideAvail();
+                    } else {
+                        state.endDate   = date;
+                        state.selecting = 'start';
+                        onRangeSelected();
+                    }
+                }
+                updateChips();
+                renderCalendar();
+            };
+        }
+
+        function makeDayHover(date) {
+            return function () {
+                if (state.selecting === 'end' && state.startDate && !state.endDate) {
+                    state.hoverDate = date;
+                    updateRangeClasses();  // ← solo clases, DOM intacto
+                }
+            };
+        }
+
+        function updateChips() {
+            if (state.startDate) {
+                startDisp.textContent = formatDate(state.startDate);
+                startDisp.classList.add('has-date');
+            } else {
+                startDisp.textContent = 'Select date';
+                startDisp.classList.remove('has-date');
+            }
+            if (state.endDate) {
+                endDisp.textContent = formatDate(state.endDate);
+                endDisp.classList.add('has-date');
+            } else {
+                endDisp.textContent = 'Select date';
+                endDisp.classList.remove('has-date');
+            }
+        }
+
+        function formatDate(d) {
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDateISO(d) {
+            var y  = d.getFullYear();
+            var m  = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + dd;
+        }
+
+        /* Month navigation */
+        if (calPrev) calPrev.addEventListener('click', function () {
+            var d = new Date(state.calYear, state.calMonth - 1, 1);
+            state.calYear  = d.getFullYear();
+            state.calMonth = d.getMonth();
+            renderCalendar();
+        });
+
+        if (calNext) calNext.addEventListener('click', function () {
+            var d = new Date(state.calYear, state.calMonth + 1, 1);
+            state.calYear  = d.getFullYear();
+            state.calMonth = d.getMonth();
+            renderCalendar();
+        });
+
+        /* ════════════════════════════════════════
+           AVAILABILITY CHECK
+        ════════════════════════════════════════ */
+        var availabilityTimeout;
+
+        function triggerAvailabilityCheck(carId, startDate, endDate) {
+            clearTimeout(availabilityTimeout);
+            availabilityTimeout = setTimeout(function () {
+                checkAvailability(carId, startDate, endDate);
+            }, 400);
+        }
+
+        function onRangeSelected() {
+            if (!state.startDate || !state.endDate) return;
+
+            // Mantener bloqueado hasta que Laravel confirme
+            isAvailable = false;
+            step1Next.disabled = true;
+
+            // Si no hay carId, omitir el check
+            var carId = carIdField ? carIdField.value : '';
+            if (!carId) {
+                showAvail('ok');
+                return;
+            }
+
+            triggerAvailabilityCheck(
+                carId,
+                formatDateISO(state.startDate),
+                formatDateISO(state.endDate)
+            );
+        }
+
+        function checkAvailability(carId, startDate, endDate) {
+            showAvail('checking');
+
+            var url = '/wp-json/booking/v1/availability';
+
+            var payload = {
+                car_id: carId,
+                start_date: startDate,
+                end_date: endDate
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': bookingData ? bookingData.nonce : ''
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    throw new Error('Server error');
+                }
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.available) {
+                    isAvailable = true;
+                    step1Next.disabled = false;
+                    showAvail('ok');
+                    // Actualizar precio con dato real de Laravel
+                    if (data.total_price && data.days) {
+                        pricePerDay = parseFloat(data.total_price) / parseInt(data.days);
+                    }
+                } else {
+                    isAvailable = false;
+                    step1Next.disabled = true;
+                    showAvail('error', data.message || 'Fechas no disponibles.');
+                }
+            })
+            .catch(function (err) {
+                console.warn('Availability check failed:', err);
+                isAvailable = false;
+                step1Next.disabled = true;
+                showAvail('error', 'Fallo de conexión. Por favor reintenta.');
+            });
+        }
+
+        function showAvail(state, msg) {
+            availBlock.style.display = 'block';
+            availChk.style.display = 'none';
+            availOk.style.display  = 'none';
+            availErr.style.display = 'none';
+            if (state === 'checking') availChk.style.display = 'flex';
+            else if (state === 'ok')  availOk.style.display  = 'flex';
+            else if (state === 'error') {
+                availErrTxt.textContent = msg || 'Not available';
+                availErr.style.display  = 'flex';
+            }
+        }
+
+        function hideAvail() {
+            availBlock.style.display = 'none';
+            availChk.style.display = 'none';
+            availOk.style.display  = 'none';
+            availErr.style.display = 'none';
+        }
+
+        /* ════════════════════════════════════════
+           SUMMARY & PAYMENT (Step 3)
+        ════════════════════════════════════════ */
+        function fillSummary() {
+            var days  = Math.ceil((state.endDate - state.startDate) / 86400000);
+            var total = days * pricePerDay;
+            var title = (bookingData && bookingData.carTitle) ? bookingData.carTitle : 'Vehicle';
+
+            // Step 2 – trip preview
+            if (detailStart) detailStart.textContent = formatDate(state.startDate);
+            if (detailEnd)   detailEnd.textContent   = formatDate(state.endDate);
+            if (detailDays)  detailDays.textContent  = days + (days === 1 ? ' day' : ' days');
+
+            // Step 3 – payment summary
+            var dsStr = formatDate(state.startDate) + ' – ' + formatDate(state.endDate) + ' (' + days + (days === 1 ? ' day' : ' days') + ')';
+            var totalStr = '$' + total.toFixed(2);
+
+            if (sumCarName)   sumCarName.textContent   = title;
+            if (sumDatesDays) sumDatesDays.textContent = dsStr;
+            if (sumTotal)     sumTotal.textContent     = totalStr;
+            if (payBtnText)   payBtnText.textContent   = 'Pay ' + totalStr;
+        }
+
+        /* ════════════════════════════════════════
+           BOOKING SUBMISSION (step 4)
+        ════════════════════════════════════════ */
+        function submitBooking() {
+            // Reset step 4 UI to loading state
+            confirmIcon.className = 'bm-confirm-icon';
+            confirmIcon.innerHTML = '<div class="bm-spinner bm-spinner-lg"></div>';
+            confirmTitle.textContent = 'Processing Payment…';
+            confirmText.textContent  = 'Please wait while we confirm your reservation privately.';
+            confirmActions.style.display = 'none';
+
+            var carId     = carIdField ? carIdField.value : '';
+            var startDate = formatDateISO(state.startDate);
+            var endDate   = formatDateISO(state.endDate);
+
+            // Fetch request towards WordPress REST endpoint
+            var restUrl = (bookingData && bookingData.restUrl) ? bookingData.restUrl : '/wp-json/booking/v1/reserve';
+
+            var payload = {
+                car_id: carId,
+                start_date: startDate,
+                end_date: endDate
+            };
+
+            fetch(restUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': bookingData ? bookingData.nonce : ''
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function(res) {
+                return res.json().then(function(data) {
+                    // 409 = conflicto de disponibilidad → volver a Step 1
+                    if (res.status === 409) {
+                        isAvailable = false;
+                        step1Next.disabled = true;
+                        showAvail('error', 'Este coche ya no está disponible para las fechas seleccionadas');
+                        goToStep(1);
+                        return;
+                    }
+                    if (!res.ok) throw new Error(data.message || 'Payment processing failed.');
+                    return data;
+                });
+            })
+            .then(function(data) {
+                if (data) showSuccess();
+            })
+            .catch(function(err) {
+                showError(err.message || 'Could not process the payment.');
+            });
+        }
+
+        function showSuccess() {
+            confirmIcon.className = 'bm-confirm-icon success';
+            confirmIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+            confirmTitle.textContent = 'Payment Successful!';
+            confirmText.textContent  = 'Your reservation has been confirmed. You will receive an email shortly.';
+            confirmActions.style.display = 'flex';
+        }
+
+        function showError(msg) {
+            confirmIcon.className = 'bm-confirm-icon error';
+            confirmIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            confirmTitle.textContent = 'Payment Failed';
+            confirmText.textContent  = msg + ' Please close and try again, or check your connection.';
+            // En error el botón "done" cerrará el modal sin recargar
+            confirmActions.style.display = 'flex';
+        }
+
+        /* ════════════════════════════════════════
+           RESET
+        ════════════════════════════════════════ */
+        function resetAll() {
+            state.startDate  = null;
+            state.endDate    = null;
+            state.hoverDate  = null;
+            state.selecting  = 'start';
+            isAvailable      = false;
+            if (step1Next) step1Next.disabled = true;
+            hideAvail();
+            updateChips();
+            goToStep(1);
+            initCalendar();
+        }
+
+    });
+})();
